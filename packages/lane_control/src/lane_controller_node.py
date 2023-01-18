@@ -95,8 +95,7 @@ class LaneControllerNode(DTROS):
         self.charge_stop = False
         self.tag_pose_msg = None
         self.lane_pose_msg = None
-        self.min_charge = 80
-        self.max_charge = 90
+        self.min_charge = 95
         self.tag_info = False
 
         self.current_pose_source = "lane_filter"
@@ -134,6 +133,9 @@ class LaneControllerNode(DTROS):
     def cbFSMState(self, msg):
         if msg.state == "LANE_FOLLOWING":
             self.charge_stop = True
+            self.tag_info = False
+        elif msg.state == "LANE_FOLLOWING_AVOID":
+            self.tag_info = True
         elif msg.state == "NORMAL_JOYSTICK_CONTROL":
             self.charge_stop = False
             self.tag_info = False
@@ -180,15 +182,11 @@ class LaneControllerNode(DTROS):
         msg_bat_state.header.stamp = rospy.Time(0)
         msg_bat_state.data = False
         
-
         if self.charge_stop:
             url = f"http://pumuckl1/health/battery"
             self.bat_data = requests.get(url).json()
             if self.bat_data["battery"]["percentage"] <= self.min_charge:
                 msg_bat_state.data = True
-                self.tag_info = True
-            else:
-                self.tag_info = False
 
         self.pub_bat_soc.publish(msg_bat_state)
 
@@ -203,6 +201,9 @@ class LaneControllerNode(DTROS):
         dt = None
         if self.last_s is not None:
             dt = current_s - self.last_s
+
+        lf = True
+        lf_v_min = False
 
         if tag_pose_msg!=None:
 
@@ -221,12 +222,18 @@ class LaneControllerNode(DTROS):
             self.log(tag_pose_trns)
             self.log(tag_pose_trns["x"])
 
-            if tag_pose_trns["x"] < 0.4:
+            if tag_pose_trns["x"] < 1.0:
+                lf_v_min = True
+
+            elif tag_pose_trns["x"] < 0.5:
                 lf = False
-                v = 0.0 #0.2
-                omega = 0 #(-0.15-(tag_pose_trns["x"]))*2
-            else:
-                lf = True
+                v = 0.075
+                omega = (-0.15-(tag_pose_trns["y"]))*2
+
+            elif tag_pose_trns["x"] < 0.2:
+                v = 0.0
+                omega = 0.0
+                
             
         if lf:
             # Compute errors
@@ -245,6 +252,9 @@ class LaneControllerNode(DTROS):
 
             # For feedforward action (i.e. during intersection navigation)
             omega += self.params["~omega_ff"]
+
+        if lf_v_min:
+            v = 0.15
 
         # Initialize car control msg, add header from input message
         car_control_msg = Twist2DStamped()
