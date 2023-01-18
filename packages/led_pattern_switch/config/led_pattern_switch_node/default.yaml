@@ -16,3 +16,4 @@ mappings: #Mapping from FSMStates.state to cmd source names. Allows different FS
   PARALLEL_AUTONOMY: "coordination"  
   OBSTACLE_STOP: "coordination"
   OBSTACLE_ALERT: "coordination"
+  LANE_FOLLOWING_AVOID: "coordination"

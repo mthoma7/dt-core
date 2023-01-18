@@ -12,6 +12,10 @@ events: # Maps from subscribing topic to signal ids
     topic: "joy_mapper_node/joystick_override"
     msg_type: "BoolStamped"
     trigger: False
+  charging_station:
+    topic: "lane_controller_node/bat_soc"
+    msg_type: "BoolStamped"
+    trigger: True
 
 # Define nodes
 nodes:
@@ -20,7 +24,7 @@ nodes:
   lane_filter_node: "lane_filter_node/switch"
   ground_projection_node: "ground_projection_node/switch"
   # extras added
-
+  apriltag_node: "apriltag_detector_node/switch"
 
 # Define state transitions
 
@@ -35,13 +39,23 @@ states:
       - lane_filter_node
       - line_detector_node
       - ground_projection_node
+      - apriltag_node
     lights: "GREEN"
   LANE_FOLLOWING:
+    transitions:
+      charging_station: "LANE_FOLLOWING_AVOID"
     active_nodes:
       - anti_instagram
       - line_detector_node
       - lane_filter_node
       - ground_projection_node
+      - apriltag_node
     lights: "RED"
-
-
+  LANE_FOLLOWING_AVOID:
+    active_nodes:
+      - anti_instagram
+      - line_detector_node
+      - lane_filter_node
+      - ground_projection_node
+      - apriltag_node
+    lights: "BLUE"
