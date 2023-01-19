@@ -95,7 +95,7 @@ class LaneControllerNode(DTROS):
         self.charge_stop = False
         self.tag_pose_msg = None
         self.lane_pose_msg = None
-        self.min_charge = 95
+        self.min_charge = 98
         self.tag_info = False
 
         self.current_pose_source = "lane_filter"
@@ -206,6 +206,7 @@ class LaneControllerNode(DTROS):
         lf_v_min = False
 
         if tag_pose_msg!=None:
+            omega = 0.0
 
             tag_pose_trns = {"x":0,"y":0,"z":0};
             tag_pose_rot = {"x":0,"y":0,"z":0,"w":0};
@@ -219,18 +220,28 @@ class LaneControllerNode(DTROS):
                     tag_pose_rot["z"] = (item.transform.rotation.z)
                     tag_pose_rot["w"] = (item.transform.rotation.w)
             
-            self.log(tag_pose_trns)
-            self.log(tag_pose_trns["x"])
+            #self.log(tag_pose_trns)
+            #self.log(tag_pose_rot)
 
             if tag_pose_trns["x"] < 1.0:
                 lf_v_min = True
 
-            elif tag_pose_trns["x"] < 0.5:
+            if tag_pose_trns["x"] < 0.5:
                 lf = False
-                v = 0.075
-                omega = (-0.15-(tag_pose_trns["y"]))*2
+                lf_v_min = False
+                v = 0.1
+                omega_rot = -tag_pose_rot["x"]*5
+                omega_trns = (0.1075+tag_pose_trns["y"])*3
+                omega = omega_rot + omega_trns
+                
+                #self.log("X: "+ str(tag_pose_trns["x"]))
+                #self.log("ROT: "+ str(omega_rot))
+                #self.log("TRANS: "+str(omega_trns))
+                #self.log("OMEGA: "+str(omega))
 
-            elif tag_pose_trns["x"] < 0.2:
+            if tag_pose_trns["x"] < 0.25:
+                lf = False
+                lf_v_min = False
                 v = 0.0
                 omega = 0.0
                 
@@ -254,7 +265,7 @@ class LaneControllerNode(DTROS):
             omega += self.params["~omega_ff"]
 
         if lf_v_min:
-            v = 0.15
+            v = 0.125
 
         # Initialize car control msg, add header from input message
         car_control_msg = Twist2DStamped()
