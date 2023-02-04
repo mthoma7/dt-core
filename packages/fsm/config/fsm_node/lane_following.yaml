@@ -51,7 +51,7 @@ states:
       - ground_projection_node
       - apriltag_node
     lights: "RED"
-  LANE_FOLLOWING_AVOID:
+  LANE_FOLLOWING_AVOID: #Variable für Charge Control
     active_nodes:
       - anti_instagram
       - line_detector_node

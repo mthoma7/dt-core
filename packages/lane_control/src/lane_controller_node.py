@@ -92,6 +92,7 @@ class LaneControllerNode(DTROS):
         self.last_s = None
         self.stop_line_distance = None
 
+        # ADDED Variables for CHARGING
         self.charge_stop = False
         self.tag_pose_msg = None
         self.lane_pose_msg = None
@@ -104,8 +105,12 @@ class LaneControllerNode(DTROS):
         self.pub_car_cmd = rospy.Publisher(
             "~car_cmd", Twist2DStamped, queue_size=1, dt_topic_type=TopicType.CONTROL
         )
+
+        # ADDED PUBLISHER FOR CHARGING
         self.pub_bat_soc = rospy.Publisher(
-            "~bat_soc", BoolStamped, queue_size=1
+            "~bat_soc",
+            BoolStamped,
+            queue_size=1
         )
 
         # Construct subscribers
@@ -123,9 +128,18 @@ class LaneControllerNode(DTROS):
             "~wheels_cmd", WheelsCmdStamped, self.cbWheelsCmdExecuted, queue_size=1
         )
         
-        self.sub_fsm_mode = rospy.Subscriber("~fsm_mode", FSMState, self.cbFSMState, queue_size=1)
+        # ADDED SUBSCRIBER FOR CHARGING
+        self.sub_fsm_mode = rospy.Subscriber(
+            "~fsm_mode",
+            FSMState,
+            self.cbFSMState,
+            queue_size=1
+        )
 
-        self.sub_tag_infos = rospy.Subscriber("apriltag_postprocessing_node/apriltags_out", AprilTagsWithInfos, self.cbTagPose)
+        self.sub_tag_infos = rospy.Subscriber(
+            "apriltag_postprocessing_node/apriltags_out",
+            AprilTagsWithInfos, self.cbTagPose
+        )
 
         self.log("Initialized!")
 
@@ -233,11 +247,6 @@ class LaneControllerNode(DTROS):
                 omega_rot = -tag_pose_rot["x"]*5
                 omega_trns = (0.1075+tag_pose_trns["y"])*3
                 omega = omega_rot + omega_trns
-                
-                #self.log("X: "+ str(tag_pose_trns["x"]))
-                #self.log("ROT: "+ str(omega_rot))
-                #self.log("TRANS: "+str(omega_trns))
-                #self.log("OMEGA: "+str(omega))
 
             if tag_pose_trns["x"] < 0.25:
                 lf = False
